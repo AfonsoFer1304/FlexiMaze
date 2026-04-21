@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/background"> <TextView
+    android:id="@+id/tvTitle"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="FlexiMaze"
+    android:textSize="64sp"
+    android:textStyle="bold"
+    android:textColor="#FFEB3B"
+    android:shadowColor="#E040FB"
+    android:shadowDx="0"
+    android:shadowDy="0"
+    android:shadowRadius="25"
+    app:layout_constraintBottom_toTopOf="@+id/btnJogar"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintVertical_chainStyle="packed"
+    android:layout_marginBottom="60dp"/>
+
+    <Button
+        android:id="@+id/btnJogar"
+        android:layout_width="250dp"
+        android:layout_height="70dp"
+        android:text="JOGAR"
+        android:textSize="22sp"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="@android:color/transparent"
+        android:background="@drawable/neon_button"
+        app:layout_constraintBottom_toTopOf="@+id/btnInstrucoes"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvTitle"
+        android:layout_marginBottom="20dp"/>
+
+    <Button
+        android:id="@+id/btnInstrucoes"
+        android:layout_width="250dp"
+        android:layout_height="70dp"
+        android:text="INSTRUÇÕES"
+        android:textSize="22sp"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="@android:color/transparent"
+        android:background="@drawable/neon_button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnJogar" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
