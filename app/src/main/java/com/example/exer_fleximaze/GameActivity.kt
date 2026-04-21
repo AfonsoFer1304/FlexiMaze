@@ -52,6 +52,7 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var tvFinalScore: TextView
 
     private lateinit var soundPool: SoundPool
+    private var somImpactoId: Int = 0
 
     private var nivelAtual = 1
     private var tempoSegundos = 0
@@ -107,12 +108,25 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
         val btnJogarNovamente = findViewById<Button>(R.id.btnJogarNovamente)
         val btnMenuPrincipal = findViewById<Button>(R.id.btnMenuPrincipal)
 
-        val audioAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
-        soundPool = SoundPool.Builder().setMaxStreams(3).setAudioAttributes(audioAttributes).build()
+        // Configurar SoundPool para efeitos sonoros rápidos (como o impacto)
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_GAME)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        soundPool = SoundPool.Builder()
+            .setMaxStreams(3)
+            .setAudioAttributes(audioAttributes)
+            .build()
+
+        // Carregar o som de impacto
+        somImpactoId = soundPool.load(this, R.raw.somimpactobola, 1)
 
         carregarNivelComCores(nivelAtual)
 
         mazeView.onImpactListener = {
+            // Tocar o som de impacto quando a bola bate na parede
+            tocarSomImpacto()
+
             pontuacaoNivel -= 150
             if (pontuacaoNivel < 500) pontuacaoNivel = 500
             tvPontuacao.text = "🏆 Pontos: ${pontuacaoTotal + pontuacaoNivel}"
@@ -167,6 +181,11 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         iniciarCronometro()
+    }
+
+    private fun tocarSomImpacto() {
+        // Toca o som com volume moderado (0.5f)
+        soundPool.play(somImpactoId, 0.5f, 0.5f, 1, 0, 1f)
     }
 
     private fun avancarParaProximoNivel() {
