@@ -53,6 +53,7 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var soundPool: SoundPool
     private var somImpactoId: Int = 0
+    private var somMetaId: Int = 0
 
     private var nivelAtual = 1
     private var tempoSegundos = 0
@@ -73,10 +74,14 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
             val segundos = tempoSegundos % 60
 
             tvTimer.text = String.format("Nível %d | ⏱ %02d:%02d", nivelAtual, minutos, segundos)
-            tvPontuacao.text = "🏆 Pontos: ${pontuacaoTotal + pontuacaoNivel}"
+            tvPontuacao.text = "🏆 Pontos: ${performanceScore()}"
 
             timerHandler.postDelayed(this, 1000)
         }
+    }
+
+    private fun performanceScore(): Int {
+        return pontuacaoTotal + pontuacaoNivel
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,33 +113,35 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
         val btnJogarNovamente = findViewById<Button>(R.id.btnJogarNovamente)
         val btnMenuPrincipal = findViewById<Button>(R.id.btnMenuPrincipal)
 
-        // Configurar SoundPool para efeitos sonoros rápidos (como o impacto)
+        // Configurar SoundPool para efeitos sonoros
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_GAME)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
         soundPool = SoundPool.Builder()
-            .setMaxStreams(3)
+            .setMaxStreams(5)
             .setAudioAttributes(audioAttributes)
             .build()
 
-        // Carregar o som de impacto
+        // Carregar os sons
         somImpactoId = soundPool.load(this, R.raw.somimpactobola, 1)
+        somMetaId = soundPool.load(this, R.raw.sommeta, 1)
 
         carregarNivelComCores(nivelAtual)
 
         mazeView.onImpactListener = {
-            // Tocar o som de impacto quando a bola bate na parede
             tocarSomImpacto()
-
             pontuacaoNivel -= 150
             if (pontuacaoNivel < 500) pontuacaoNivel = 500
-            tvPontuacao.text = "🏆 Pontos: ${pontuacaoTotal + pontuacaoNivel}"
+            tvPontuacao.text = "🏆 Pontos: ${performanceScore()}"
         }
 
         mazeView.onGoalReachedListener = {
             pararCronometro()
             sensorManager.unregisterListener(this)
+
+            // Tocar som de vitória ao chegar à meta
+            tocarSomMeta()
 
             pontuacaoTotal += pontuacaoNivel
 
@@ -184,18 +191,19 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun tocarSomImpacto() {
-        // Toca o som com volume moderado (0.5f)
-        soundPool.play(somImpactoId, 0.5f, 0.5f, 1, 0, 1f)
+        soundPool.play(somImpactoId, 0.4f, 0.4f, 1, 0, 1f)
+    }
+
+    private fun tocarSomMeta() {
+        // Som da meta um pouco mais alto para celebrar o sucesso
+        soundPool.play(somMetaId, 0.8f, 0.8f, 1, 0, 1f)
     }
 
     private fun avancarParaProximoNivel() {
         nivelAtual++
-
         pontuacaoNivel = 5000
         tempoSegundos = 0
-
         carregarNivelComCores(nivelAtual)
-
         gameUI.visibility = View.VISIBLE
         rotationSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
         accelerometer?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
@@ -204,19 +212,15 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
 
     private fun mostrarVideoAlongamento(acaoFinal: () -> Unit) {
         acaoAposVideo = acaoFinal
-
         videoLayout.visibility = View.VISIBLE
-
         val videoResId = when (nivelAtual) {
             1 -> R.raw.exercicio1
             2 -> R.raw.exercicio2
             3 -> R.raw.exercicio3
             else -> R.raw.exercicio1
         }
-
         val videoPath = "android.resource://$packageName/$videoResId"
         videoView.setVideoURI(Uri.parse(videoPath))
-
         videoView.setOnCompletionListener { fecharVideoEAplicarAcao() }
         videoView.start()
     }
@@ -229,19 +233,15 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
 
     private fun mostrarEcraClassificacao() {
         scoreLayout.visibility = View.VISIBLE
-
         val estrelas = when {
             pontuacaoTotal >= 12000 -> "⭐⭐⭐"
             pontuacaoTotal >= 7000  -> "⭐⭐"
             else                    -> "⭐"
         }
         tvStars.text = estrelas
-
         val prefs = getSharedPreferences("FlexiMazePrefs", Context.MODE_PRIVATE)
         val recordeAntigo = prefs.getInt("RecordePontuacao", 0)
-
         tvFinalScore.text = pontuacaoTotal.toString()
-
         if (pontuacaoTotal > recordeAntigo) {
             prefs.edit().putInt("RecordePontuacao", pontuacaoTotal).apply()
             tvHighScore.text = "👑 $pontuacaoTotal 👑\n(Novo Recorde!)"
@@ -255,12 +255,10 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
     private fun reiniciarSessaoCompleta() {
         scoreLayout.visibility = View.GONE
         gameUI.visibility = View.VISIBLE
-
         nivelAtual = 1
         pontuacaoTotal = 0
         pontuacaoNivel = 5000
         tempoSegundos = 0
-
         carregarNivelComCores(nivelAtual)
         rotationSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
         accelerometer?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
@@ -269,20 +267,16 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
 
     private fun carregarNivelComCores(level: Int) {
         mazeView.loadLevel(level)
-
         val corSegura = when (level) {
             1 -> Color.parseColor("#4CAF50")
             2 -> Color.parseColor("#FF9800")
             3 -> Color.parseColor("#E53935")
             else -> Color.parseColor("#EAEAEA")
         }
-
         tvTimer.setTextColor(corSegura)
         tvPontuacao.setTextColor(corSegura)
-
         val timerBg = tvTimer.background as GradientDrawable
         timerBg.setStroke(2 * resources.displayMetrics.density.toInt(), corSegura)
-
         val pontuacaoBg = tvPontuacao.background as GradientDrawable
         pontuacaoBg.setStroke(2 * resources.displayMetrics.density.toInt(), corSegura)
     }
@@ -300,10 +294,8 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
         mazeView.resetPosition()
         tempoSegundos = 0
         pontuacaoNivel = 5000
-
         tvTimer.text = String.format("Nível %d | ⏱ 00:00", nivelAtual)
-        tvPontuacao.text = "🏆 Pontos: ${pontuacaoTotal + pontuacaoNivel}"
-
+        tvPontuacao.text = "🏆 Pontos: ${performanceScore()}"
         tvRestartMessage.visibility = View.VISIBLE
         tvRestartMessage.alpha = 1f
         tvRestartMessage.animate()
@@ -336,7 +328,6 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (gameUI.visibility != View.VISIBLE || event == null) return
-
         when (event.sensor.type) {
             Sensor.TYPE_ROTATION_VECTOR -> {
                 SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
@@ -348,7 +339,6 @@ class GameActivity : AppCompatActivity(), SensorEventListener {
                 val gY = event.values[1] / SensorManager.GRAVITY_EARTH
                 val gZ = event.values[2] / SensorManager.GRAVITY_EARTH
                 val gForce = sqrt((gX * gX + gY * gY + gZ * gZ).toDouble())
-
                 if (gForce > 1.8) {
                     val now = System.currentTimeMillis()
                     if (now - lastShakeTime > 1500) {
